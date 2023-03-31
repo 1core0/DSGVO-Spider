@@ -1,12 +1,22 @@
+<<<<<<< HEAD
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 import argparse
 from tqdm import tqdm
+=======
+import argparse
+import asyncio
+from crawler import crawl
+>>>>>>> feature/async-req
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('--domain', required=True, help='Domain to crawl')
+<<<<<<< HEAD
+=======
+parser.add_argument('--rate', type=int, default=20, help='Number of concurrent requests')
+>>>>>>> feature/async-req
 args = parser.parse_args()
 
 # Set the domain to crawl
@@ -14,8 +24,8 @@ domain = args.domain
 
 # Set the initial URL to crawl
 url = 'https://' + domain
-visited_urls = set()
 
+<<<<<<< HEAD
 # Create a queue to store sublinks
 sublinks_queue = [url]
 
@@ -48,4 +58,8 @@ def crawl(url):
 # Start crawling all sublinks in the queue
 crawl(url)
 
+=======
+# Start crawling all sublinks in the queue
+asyncio.run(crawl(url, domain, args.rate))
+>>>>>>> feature/async-req
 
