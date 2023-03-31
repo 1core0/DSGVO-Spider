@@ -6,7 +6,7 @@ import asyncio
 
 # Set up global variables
 visited_urls = set()
-sublinks_queue = []
+sublinks_queue = set()
 
 async def crawl(url, domain, async_limit):
     # Add the URL to the set of visited URLs
@@ -34,16 +34,17 @@ async def crawl(url, domain, async_limit):
 
         # Follow links to subdomains and other domains
         if parsed_url.netloc.endswith(domain) and abs_url not in visited_urls and abs_url not in sublinks_queue:
-            sublinks_queue.append(abs_url)
+            sublinks_queue.add(abs_url)
             print("Found sublink: ", abs_url)
 
     # Recursively crawl sublinks with Semaphore
-    semaphore = asyncio.Semaphore(async_limit)
     tasks = []
-    for sublink in sublinks_queue:
-        if sublink not in visited_urls:
-            async with semaphore:
+    async with asyncio.Semaphore(async_limit):
+        for sublink in sublinks_queue:
+            if sublink not in visited_urls:
                 task = asyncio.create_task(crawl(sublink, domain, async_limit))
                 tasks.append(task)
-    await asyncio.gather(*tasks)
+    sublinks_queue.clear()
+    for coro in asyncio.as_completed(tasks):
+        await coro
 
