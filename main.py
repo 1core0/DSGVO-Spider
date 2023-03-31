@@ -1,4 +1,5 @@
-import requests
+import asyncio
+import aiohttp
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 import argparse
@@ -20,11 +21,19 @@ visited_urls = set()
 sublinks_queue = [url]
 
 # Recursive function to crawl all links
-def crawl(url):
+async def crawl(url):
     visited_urls.add(url)
     print("Crawling: ", url)
-    response = requests.get(url, timeout=5)
-    soup = BeautifulSoup(response.content, 'html.parser')
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(url, timeout=10) as response:
+                content = await response.read()
+        except asyncio.TimeoutError:
+            print(f"Timed out while requesting: {url}")
+            return
+
+    soup = BeautifulSoup(content, 'html.parser')
     links = soup.find_all('a')
     for link in links:
         href = link.get('href')
@@ -41,11 +50,13 @@ def crawl(url):
             print("Found sublink: ", abs_url)
 
     # Recursively crawl sublinks
+    tasks = []
     for sublink in sublinks_queue:
         if sublink not in visited_urls:
-            crawl(sublink)
+            task = asyncio.create_task(crawl(sublink))
+            tasks.append(task)
+    await asyncio.gather(*tasks)
 
 # Start crawling all sublinks in the queue
-crawl(url)
-
+asyncio.run(crawl(url))
 
